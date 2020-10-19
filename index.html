@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+<meta charset="UTF-8 /">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AP Photos</title>
+<link rel="stylesheet" href="W3.CSS%20Template_files/w3.css" />
+<style>
+  /* vue overrides */
+  .fade-enter-active, .fade-leave-active {
+    transition: opacity .5s;
+  }
+  .fade-enter, .fade-leave-to
+  {
+    opacity: 0;
+  }
+  .router-link-active {
+    color: rgb(76, 175, 80);
+  }
+  /* body when showing modal */
+  body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100vw;
+  }
+  /* general */
+  * {
+    box-sizing: border-box;
+  }
+  #vue-div {
+    position: relative;
+    min-height: 100vh;
+    font-family: Avantgarde, TeX Gyre Adventor, URW Gothic L, sans-serif;
+    background: linear-gradient(0deg, rgb(0, 0, 0), rgb(32, 32, 32) 100%);
+    background-attachment: fixed;
+  }
+  #header {
+    overflow: visible;
+  }
+  #topnav {
+    position: absolute;
+    right: 0;
+  }
+  #main {
+    max-width:1564px;
+    padding-top: 3.5rem !important;
+    padding-bottom: 3.5rem !important;
+  }
+  #footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 3.5rem;
+  }
+  #main h3 {
+    padding-bottom: 0 !important;
+  }
+  .gal-item img {
+    max-width: 100%;
+    max-height: 100%;
+    padding: 16px;
+  }
+  .modal-show {
+    display: block;
+    padding: 54px 0 54px 0;
+  }
+  .modal-show span {
+    cursor: pointer;
+    user-select: none;
+  }
+  .modal-show img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .gal-item div {
+    height: 250px;
+    position: relative; 
+  }
+#topnav .w3-button.hamicon {
+  display: none;
+  text-align: right;
+  float: none;
+}
+/* responsive */
+@media screen and (max-width: 900px) {
+  #topnav .w3-button.hamicon {
+    display: block;
+  }
+  #topnav .w3-button:not(:first-child) {
+    display: none;
+    text-align: left;
+    float: none;
+  }
+  #topnav.expanded .w3-button:not(:first-child) {
+    display: block;
+  }
+} 
+</style>
+</head>
+<body>
+<div id="vue-div" class="w3-black">
+
+<!-- navbar  -->
+<div id="header" class="w3-bar w3-black w3-wide w3-padding w3-card w3-top">
+  <span class="w3-bar-item">&nbsp;</span>
+  <div id="topnav" class="w3-black">
+    <a href="javascript:void(0);" class="w3-bar-item w3-button hamicon" onclick="doToggleHam()">&#9776;</a>
+    <template v-for="pageI in page_obs">
+      <router-link :to=`/${pageI.id}` class="w3-bar-item w3-button" onclick="setHamExpanded(false)">{{pageI.title}}</router-link>
+    </template>
+  </div>
+</div>
+
+<!-- content -->
+<div id="main" class="w3-content w3-padding">
+  <router-view :page_obs="page_obs" @show_slide_show="onShowSlideShow"></router-view>
+</div>
+
+<!-- footer -->
+<footer id="footer" class="w3-center w3-black">
+  <p>&#169; 2020</p>
+</footer>
+
+<c-slide-show :img_in="this.show_img" :imgs="this.show_imgs" @hide_slide_show="onHideSlideShow"></c-slide-show>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
+
+<script type="text/x-template" id="slides-template">
+  <transition transition name="fade" mode="out-in">
+  <div v-if="show">
+      <div class="w3-container w3-margin-bottom w3-margin-top">
+        <h3 class="w3-border-bottom w3-border-grey">{{ gallery_ob.title }}</h3>
+	 <a v-if="show_download_all" v-bind:href="gallery_ob.download_all">Download</a>
+      </div>
+      <div class="w3-row-padding" v-for="row in rows">
+        <div class="w3-col l3 m6 w3-margin-bottom gal-item" v-for="item in row"> 
+          <div class="w3-round-large w3-border w3-border-dark-grey" v-on:click="onShowSlideShow(item)" >
+              <img :src="item.pathSmall" alt="" class="w3-display-middle" />
+          </div>
+        </div>
+      </div>
+  </div>
+  </transition>
+  </script>
+
+<script type="text/x-template" id="slide-page-template">
+  <div>
+    <template v-for="gallery_ob_i in gallery_obs"> 
+      <c-slides :gallery_ob="gallery_ob_i" @show_slide_show="onShowSlideShow"></c-slides>
+    </template>
+  </div>
+</script>
+
+<script type="text/x-template" id="slide-show-template">
+  <transition transition name="fade" mode="out-in">
+  <div v-if="show" class="w3-modal w3-black modal-show">
+    <span class="w3-text-white w3-xxlarge w3-hover-text-grey w3-container w3-display-topright" v-on:click="onClose()">×</span>
+    <span class="w3-text-white w3-xxlarge w3-hover-text-grey w3-container w3-display-bottomleft" v-on:click="onShowPrev()">❮</span>
+    <span class="w3-text-white w3-xxlarge w3-hover-text-grey w3-container w3-display-bottomright" v-on:click="onShowNext()">❯</span>
+    <transition transition name="fade" mode="out-in">
+      <img :src="imgSrc" :key="imgSrc" v-on:click="onAnimToggle()">
+    </transition>
+   </div>
+  </transition>
+</script>
+
+<script>
+"use strict";
+function setHamExpanded(expanded) {
+  var el = document.getElementById("topnav");
+  if (el) {
+    if (!expanded) {
+      el.classList.remove("expanded");
+    } else {
+      el.classList.add("expanded");
+    }
+  }
+} 
+function doToggleHam() {
+  var el = document.getElementById("topnav");
+  setHamExpanded(el && !el.classList.contains("expanded"));
+}
+function setModal(expanded) {
+  if (expanded)
+  {
+    document.body.classList.add("modal-open");
+  }
+  else
+  {
+    document.body.classList.remove("modal-open");
+  }
+} 
+
+const getChunks = (arr, size) =>
+  arr.reduce((acc, _, i) => (i % size) ? acc : [...acc, arr.slice(i, i + size)], [ ]);
+
+Vue.component('c-slide-show', {
+  template: '#slide-show-template',
+  props: ['img_in', 'imgs'],
+  data: function () {
+        return {
+          img: this.img_in,
+          _timer_anim_handle: null,
+        }
+    },
+  watch: {
+    img_in: function () {
+      this.img = this.img_in;
+    }
+  },
+  computed: {
+    imgSrc() {
+      return this.img.pathBig;
+    },
+    show() {
+      if (this.img)
+      {
+        setModal(true);
+        this._setAnimEnabled(true);
+      }
+      else
+      {
+        setModal(false);
+        this._setAnimEnabled(false);
+      }
+      return this.img;
+    }
+  },
+  methods: {
+    onClose: function() {
+      this.$emit('hide_slide_show');
+    },
+    onAnimToggle: function () {
+      this._setAnimEnabled(!this._timer_anim_handle);
+    },
+    onShowPrev: function() {
+      this._setImage(-1);
+    },
+    onShowNext: function() {
+      this._setImage(1);
+    },
+    _setImage: function(add) {
+      var idx = this.imgs.findIndex(val => val === this.img);
+      if (idx !== -1)
+      {
+        let i1 = idx + add;
+        let maxI = this.imgs.length;
+        while (i1 >= maxI) { i1 -= maxI; }
+        while (i1 < 0) { i1 += maxI; }
+        this.img = this.imgs[i1];
+
+        if (this._timer_anim_handle)
+        {
+          clearInterval(this._timer_anim_handle);
+          this._timer_anim_handle = setInterval(this.onShowNext, 4000);
+        }
+      }
+    },
+    _setAnimEnabled: function(enable) {
+      if (this._timer_anim_handle)
+      {
+        if (!enable)
+        {
+          clearInterval(this._timer_anim_handle);
+          this._timer_anim_handle = null;
+        }
+      }
+      else
+      {
+        if (enable)
+        {
+          this._timer_anim_handle = setInterval(this.onShowNext, 4000);
+        }
+      }
+    },
+  }
+});
+
+let CSlides = Vue.component('c-slides', {
+  template: '#slides-template',
+  props: ['gallery_ob', ''],
+  data: function() {
+      return  {
+        imgs: [ ],
+      }
+    },
+  computed: {
+    rows() {
+      return getChunks(this.imgs, 4);
+    },
+    show() {
+      return this.gallery_ob && this.imgs.length > 0;
+    },
+    show_download_all() {
+      return this.gallery_ob && this.gallery_ob.download_all;
+    }
+  },
+  watch: {
+    gallery_ob: function () {
+      this.imgs = [ ];
+      this._maybeGetImgs();
+    },
+  },
+  methods: {
+    onShowSlideShow: function(item) {
+      this.$emit('show_slide_show', { img: item, imgs: this.imgs });
+    },
+    _maybeGetImgs: function ()  {
+      if (this.gallery_ob && this.imgs.length === 0)
+      {
+        // timeout to simulate request
+        setTimeout(() => {
+          this.imgs = this.gallery_ob.getImgs();
+        }, 16);
+      }
+    }
+  },
+  mounted() {
+    this._maybeGetImgs();
+  }
+});
+
+let CSlidePage = Vue.component('c-slide-page', {
+  template: '#slide-page-template',
+  props: ['page_obs', 'pageid'],
+  data: function() {
+      return  {
+        page_ob: !this.page_ob ? null : this.page_obs.find(val => val.id === this.pageid),
+      }
+    },
+  computed: {
+    gallery_obs() {
+      return !this.page_ob ? null : this.page_ob.gallery_obs;
+    },
+  },
+  watch: {
+    page_obs: function () {
+      this._maybeSwitchPage();
+    },
+    pageid: function () {
+      this._maybeSwitchPage();
+    },
+  },
+  methods: {
+    onShowSlideShow: function (obj) {
+      this.$emit('show_slide_show', obj);
+    },
+    _maybeSwitchPage:  function() {
+        if (this.page_obs && (!this.page_ob || this.page_ob.id !== this.pageid))
+        {
+          this.page_ob = this.page_obs.find(val => val.id === this.pageid);
+        }
+    },
+  },
+});
+
+const router = new VueRouter({
+  routes: [
+    { path: '/:pageid', component: CSlidePage, props: true },
+    { path: '*',  component: CSlidePage }
+  ]
+})
+
+new Vue({
+  el: '#vue-div',
+  router,
+  data: {
+    page_obs: [ ],
+    show_img: null,
+    show_imgs: [ ],
+  },
+  methods: {
+    onShowSlideShow: function (obj) {
+      this.show_img = obj.img;
+      this.show_imgs = obj.imgs;
+    },
+    onHideSlideShow: function (obj) {
+      this.show_img = null;
+      this.show_imgs = [ ];
+    },
+  },
+  mounted() {
+    setTimeout(() => {
+      let getImgs1 = function()
+      {
+        let imgs = [ ];
+        for (let i = 1; i < 454; i++)
+        {
+          imgs.push({ pathSmall: `./1t/${i}.jpg`, pathBig: `./1/${i}.jpg` });
+        }
+        return imgs;
+      }
+      let page_obs = [ ];
+      page_obs.push({ id: '2020-10-03', title: '2020-10-03', gallery_obs: [
+        { title: '2020-10-03', getImgs: getImgs1, download_all: 'https://drive.google.com/file/d/13oe9ayQvzuUFpUVSUuZaqAhHeYEYJRwn'} ] });
+      this.page_obs = page_obs;
+    }, 0);
+  }
+});
+</script>
+</body></html>
