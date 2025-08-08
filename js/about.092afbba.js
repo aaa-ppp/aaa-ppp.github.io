@@ -1,0 +1,2 @@
+"use strict";(self["webpackChunkgallery"]=self["webpackChunkgallery"]||[]).push([[594],{5609:function(n,u,a){a.r(u),a.d(u,{default:function(){return i}});var e=a(6768);const r={class:"about"};function t(n,u){return(0,e.uX)(),(0,e.CE)("div",r,u[0]||(u[0]=[(0,e.Lk)("h1",null,"This is an about page",-1)]))}var s=a(1241);const l={},c=(0,s.A)(l,[["render",t]]);var i=c}}]);
+//# sourceMappingURL=about.092afbba.js.map
